@@ -167,13 +167,10 @@ def train_and_eval_error(
 
     diff = learned_states - test_kf_states_np
     mean_l2 = float(np.mean(np.linalg.norm(diff, axis=1)))   # mean Euclidean distance
-    # rmse = float(np.sqrt(np.mean(diff**2)))                  # coordinate-wise RMSE
-
+    
     return {
         "T": int(T),
         "mean_l2": mean_l2,
-        # "rmse": rmse,
-        # "rank": int(rank),
     }
 
 def run_sweep(
@@ -250,11 +247,9 @@ def train_only_AR(
     model = TwoLayerLinearAR((m+p)*L, hidden_dim, m*H)
 
     # train model
-    # results = {"train":[], "val":[]}
     losses = []
 
     criterion = nn.MSELoss()
-    # optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9)
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     scheduler = StepLR(optimizer, step_size=step_size, gamma=gamma)
 
