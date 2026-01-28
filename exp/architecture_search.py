@@ -2,26 +2,12 @@ from train_test import train_only_AR
 
 # architecture search for n
 def parameter_search(A, B, C, W, V, L, H, T, 
-                     epochs, batch_size, lr, step_size, gamma, lambda_reg,
+                     epochs, batch_size, lr, step_size, gamma, weight_decay,
                      train_seed, torch_seed, search_range):
-    """
-    Parameter search over n.
-
-    Args:
-    train_loader: the train dataloader.
-    val_loader: the validation dataloader.
-    model_fn: a function that, when called, returns a torch.nn.Module.
-
-    Returns:
-    The n with the least validation loss.
-    """
     best_loss = float("inf")
     best_n = None
 
     ns = search_range
-    # ns = np.arange(start=max(i-r,1), stop=i+r+1)
-
-    # ns = np.arange(start=1, stop=10 + r +1)
     losses_dict = {}
 
     for N in ns:
@@ -41,10 +27,9 @@ def parameter_search(A, B, C, W, V, L, H, T,
             lr=lr,
             step_size=step_size,
             gamma=gamma,
-            lambda_reg=lambda_reg,
+            weight_decay=weight_decay,
             train_seed=train_seed,
-            torch_seed=torch_seed,
-            dist_type='gaussian',
+            torch_seed=torch_seed
         )
         losses_dict[N] = losses
 

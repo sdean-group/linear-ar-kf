@@ -25,7 +25,7 @@ def train_test(
         lr=0.01, 
         step_size=1, 
         gamma=0.9, 
-        lambda_reg=1e-3, 
+        weight_decay=1e-3, 
         train_seed=10, 
         torch_seed=1000, 
         test_seed=20, 
@@ -55,8 +55,7 @@ def train_test(
     results = {"train":[]}
 
     criterion = nn.MSELoss(reduction='sum')
-    # optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9)
-    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=lambda_reg)
+    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     scheduler = StepLR(optimizer, step_size=step_size, gamma=gamma)
 
     model.train()
@@ -94,45 +93,6 @@ def train_test(
 
     return model, test_ar_data_kf_states_np, predicted_states_from_regression, results
 
-    # # Scatter: x = KF predicted state, y = Regression predicted state (per dimension)
-    # fig_states, axes_states = plt.subplots(n, 1, figsize=(7, 4 * n), sharex=False)
-
-    # for i in range(n):
-    #     ax = axes_states[i]
-    #     ax.set_title(f"State Dimension {i+1}")
-
-    #     x_kf = test_ar_data_kf_states_np[:, i]
-    #     y_reg = predicted_states_from_regression[:, i]
-
-    #     ax.scatter(x_kf, y_reg, s=10, alpha=0.6)
-
-    #     # Add y = x reference line
-    #     vmin = min(np.min(x_kf), np.min(y_reg))
-    #     vmax = max(np.max(x_kf), np.max(y_reg))
-    #     ax.plot([vmin, vmax], [vmin, vmax], linestyle="--", linewidth=1)
-
-    #     ax.set_xlabel("KF Predicted State")
-    #     ax.set_ylabel("Regression Predicted State")
-    #     ax.grid(True)
-
-    # fig_states.text(
-    #     0.5, 0.97, "Regression vs KF Predicted States (Scatter)",
-    #     ha="center", fontsize=18, fontweight="bold"
-    # )
-    # fig_states.text(
-    #     0.5, 0.945,
-    #     f"System Parameters: n={n}, p={p}, m={m}, L={L}, H={H}",
-    #     ha="center", fontsize=12, fontweight="bold", color="gray"
-    # )
-    # fig_states.text(
-    #     0.5, 0.92,
-    #     f"Initial state / Noise Distribution: {dist_type}",
-    #     ha="center", fontsize=12, fontweight="bold", color="gray"
-    # )
-
-    # plt.tight_layout(rect=[0, 0, 1, 0.9])
-    # fig_states.savefig(f"fig_scatter_{dist_type}.png", dpi=300, bbox_inches="tight")
-    # plt.show()
 
 def train_and_eval_error(
     A: np.ndarray,
@@ -150,19 +110,13 @@ def train_and_eval_error(
     lr: float = 0.01,
     step_size: int = 10,
     gamma: float = 0.9,
-    lambda_reg: float = 1e-3,
+    weight_decay: float = 1e-3,
     train_seed: int = 10,
     torch_seed: int = 1000,
     test_seed: int = 20,
     test_umode: str = "ramp_bias",
     dist_type: str = "gaussian",
 ):
-    """
-    Error between:
-      - x_KF(t): steady-state KF predicted state on test trajectory
-      - x_learned(t): learned feature -> KF regression prediction
-    Returns mean Euclidean distance and RMSE.
-    """
     n = A.shape[0]
     p = B.shape[1]
     m = C.shape[0]
@@ -181,7 +135,7 @@ def train_and_eval_error(
     model = TwoLayerLinearAR((m + p) * L, n, m * H)
 
     criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=lambda_reg)
+    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     scheduler = StepLR(optimizer, step_size=step_size, gamma=gamma)
 
     model.train()
@@ -272,7 +226,7 @@ def train_only_AR(
         lr=0.01,
         step_size=1,
         gamma=0.9,
-        lambda_reg=1e-3,
+        weight_decay=1e-3,
         train_seed=10,
         torch_seed=1000,
         dist_type='gaussian'
@@ -301,7 +255,7 @@ def train_only_AR(
 
     criterion = nn.MSELoss()
     # optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9)
-    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=lambda_reg)
+    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     scheduler = StepLR(optimizer, step_size=step_size, gamma=gamma)
 
     for epoch in range(epochs):
