@@ -1,48 +1,51 @@
+from __future__ import annotations
+
+"""Steady-state Kalman filter utilities."""
+
 import numpy as np
 from scipy.linalg import solve_discrete_are
 
-# ---------- steady-state Kalman gain ----------
-def steady_state_kalman_gain(A, C, W, V):
-    """
-    Solve the *estimation* DARE for P_inf:
 
-        P = A P A^T + W - A P C^T (C P C^T + V)^{-1} C P A^T
-    Using scipy's solve_discrete_are on the transposed (A^T, C^T, W, V).
-    """
-    A = np.asarray(A, float); C = np.asarray(C, float)
-    W = np.asarray(W, float); V = np.asarray(V, float)
+def steady_state_kalman_gain(
+    A: np.ndarray,
+    C: np.ndarray,
+    W: np.ndarray,
+    V: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Solve the steady-state estimation Riccati equation and return (K, P, S)."""
 
-    # Solve estimation DARE via control DARE on (A^T, C^T, W, V)
+    A = np.asarray(A, float)
+    C = np.asarray(C, float)
+    W = np.asarray(W, float)
+    V = np.asarray(V, float)
+
     P = solve_discrete_are(A.T, C.T, W, V)
     S = C @ P @ C.T + V
     K = P @ C.T @ np.linalg.inv(S)
     return K, P, S
 
+
 def run_steady_state_kalman_filter(
-    A, B, C, W, V, initial_state_mean, control_inputs, measurements
-):
-    """
-    Runs the steady-state Kalman filter.
-    initial_state_mean: hat{x}_{0|-1}
-    Returns:
-        estimated_state_means, predicted_state_means,
-    """
-    K, P, S = steady_state_kalman_gain(A, C, W, V)
+    A: np.ndarray,
+    B: np.ndarray,
+    C: np.ndarray,
+    W: np.ndarray,
+    V: np.ndarray,
+    initial_state_mean: np.ndarray,
+    control_inputs: np.ndarray,
+    measurements: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return predicted state means aligned with the trajectory and the steady-state gain."""
+
+    K, _, _ = steady_state_kalman_gain(A, C, W, V)
 
     x = initial_state_mean.copy()
-    pred_means = []
-    pred_means.append(x)
+    predicted_means = [x]
 
     for u_t, y_t in zip(control_inputs, measurements):
-        # Innovation
-        innov = y_t - C @ x
-
-        # Update with steady-state Kalman gain
-        x_update = x + K @ innov
-
-        # Prediction
+        innovation = y_t - C @ x
+        x_update = x + K @ innovation
         x = A @ x_update + B @ u_t
+        predicted_means.append(x)
 
-        pred_means.append(x)
-
-    return np.array(pred_means)[:-1], K
+    return np.asarray(predicted_means)[:-1], K

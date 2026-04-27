@@ -1,24 +1,47 @@
-from train_test import train_only_AR
+from __future__ import annotations
 
-# architecture search for n
-def parameter_search(A, B, C, W, V, L, H, T, 
-                     epochs, batch_size, lr, step_size, gamma, weight_decay,
-                     train_seed, torch_seed, search_range):
+"""Utilities for hidden-dimension search."""
+
+try:
+    from .train_test import train_only_AR
+except ImportError:
+    from train_test import train_only_AR
+
+
+def parameter_search(
+    A,
+    B,
+    C,
+    W,
+    V,
+    L,
+    H,
+    T,
+    epochs,
+    batch_size,
+    lr,
+    step_size,
+    gamma,
+    weight_decay,
+    train_seed,
+    torch_seed,
+    search_range,
+):
+    """Search over hidden dimensions and keep the configuration with the best loss."""
+
     best_loss = float("inf")
     best_n = None
-
-    ns = search_range
     losses_dict = {}
 
-    for N in ns:
-        print(f"doing n={N}")
-        model, losses = train_only_AR(
+    for hidden_dim in search_range:
+        print(f"doing n={hidden_dim}")
+        _, losses = train_only_AR(
             A,
             B,
             C,
             W,
             V,
-            hidden_dim=N,
+            hidden_dim=hidden_dim,
             L=L,
             H=H,
             T=T,
@@ -29,12 +52,13 @@ def parameter_search(A, B, C, W, V, L, H, T,
             gamma=gamma,
             weight_decay=weight_decay,
             train_seed=train_seed,
-            torch_seed=torch_seed
+            torch_seed=torch_seed,
         )
-        losses_dict[N] = losses
+        losses_dict[hidden_dim] = losses
 
-        if min(losses) < best_loss:
-            best_loss = min(losses)
-            best_n = N
+        current_best = min(losses)
+        if current_best < best_loss:
+            best_loss = current_best
+            best_n = hidden_dim
 
     return best_n, losses_dict
